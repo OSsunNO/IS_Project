@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Audio Processing</title>
+    <!-- Load jQuery library from CDN -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        // Code to execute once the page is fully loaded
+        $(document).ready(function() {
+            // When the 'submit' event is triggered, i.e., when the 'Upload' button is clicked
+            $('form').on('submit', function(event) {
+                // Prevent the form data from being submitted automatically
+                event.preventDefault();
+                // Create a FormData object from the form
+                var formData = new FormData(this);
+                // Execute Ajax POST request
+                $.ajax({
+                    url: '/upload',  // URL of the server that will receive the request
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,  // Set content type header to false to prevent jQuery from setting it
+                    processData: false,  // Set processData to false to prevent converting data into a query string
+                    success: function(data) {
+                        // Logic for handling the successful response
+                        $('#status').text('Zero-Padding for input file is completed!');
+                        $('#process-btn').show();  // Show the FFT processing button
+                        $('#signal-data').val(JSON.stringify(data.signal));  // Store the received data as a string
+                    },
+                    error: function(xhr, status, error) {
+                        // Logic for handling errors
+                        alert('File upload failed! Error: ' + xhr.responseText);
+                    }
+                });
+            });
+
+            // Logic for handling the 'Proceed FFT' button click
+            $('#process-btn').click(function() {
+                $('#status').text('Processing...');
+                var signalData = JSON.parse($('#signal-data').val());  // Parse the stored signal data
+                // Ajax POST request for FFT processing
+                $.ajax({
+                    url: '/process_fft',
+                    type: 'POST',
+                    data: JSON.stringify({ signal: signalData }),
+                    contentType: 'application/json',
+                    success: function(response) {
+                        // Display results upon successful processing
+                        $('#status').html('Processing complete! <a id="download-link" href="#" style="display:inline;">Download FFT Result</a>');
+                        $('#download-link').attr('href', response.url).show();  // Set and show the download link
+                        $('#plot-image').attr('src', response.plot_url).show();  // Show the image
+                    },
+                    error: function(xhr, status, error) {
+                        $('#status').text('Error during FFT processing. Error: ' + xhr.responseText);
+                    }
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <h1>Audio Processing</h1>
+    <form enctype="multipart/form-data">
+        <input type="file" name="file" accept=".mp3" required>  <!-- File input field -->
+        <button type="submit">Upload</button>  <!-- Upload button -->
+    </form>
+    <button id="process-btn" style="display:none;">Proceed FFT</button>  <!-- Hidden FFT processing button -->
+    <input type="hidden" id="signal-data">  <!-- Hidden input field to store signal data -->
+    <p id="status"></p>  <!-- Display status messages -->
+    <!-- Image tag to display FFT results -->
+    <img id="plot-image" src="#" style="display:none; max-width: 100%;">
+</body>
+</html>
+
